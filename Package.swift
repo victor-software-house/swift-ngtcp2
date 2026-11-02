@@ -23,12 +23,15 @@ let boringssl = try JSONDecoder().decode(
     BoringSSLSources.self,
     from: Data(contentsOf: root.appendingPathComponent("Sources/CNgtcp2BoringSSL/boringssl/gen/sources.json")))
 
-/// nghttp3's lib/*.c. The directory also holds sfparse's tests and examples in lib/sfparse.
-let nghttp3Sources = try FileManager.default
-    .contentsOfDirectory(atPath: root.appendingPathComponent("Sources/nghttp3/nghttp3/lib").path)
-    .filter { $0.hasSuffix(".c") }
-    .sorted()
-    .map { "nghttp3/lib/" + $0 }
+/// The .c files directly in a target directory's subdirectory `directory`. ngtcp2's and nghttp3's lib/
+/// directories also hold build files, and nghttp3's holds sfparse's tests and examples in lib/sfparse.
+func cFiles(_ target: String, _ directory: String) throws -> [String] {
+    try FileManager.default
+        .contentsOfDirectory(atPath: root.appendingPathComponent("Sources/\(target)/\(directory)").path)
+        .filter { $0.hasSuffix(".c") }
+        .sorted()
+        .map { "\(directory)/" + $0 }
+}
 
 /// Renames every BoringSSL symbol to CNgtcp2BoringSSL_<name> (README "Renamed BoringSSL symbols").
 let prefix = "CNgtcp2BoringSSL"
@@ -66,7 +69,7 @@ let package = Package(
         .target(
             name: "ngtcp2",
             dependencies: ["CNgtcp2BoringSSL"],
-            sources: ["ngtcp2/lib", "ngtcp2/crypto/shared.c", "ngtcp2/crypto/boringssl/boringssl.c"],
+            sources: try cFiles("ngtcp2", "ngtcp2/lib") + ["ngtcp2/crypto/shared.c", "ngtcp2/crypto/boringssl/boringssl.c"],
             cSettings: platform + [
                 .headerSearchPath("ngtcp2/lib"),
                 .headerSearchPath("ngtcp2/crypto"),
@@ -76,11 +79,12 @@ let package = Package(
         // nghttp3's library and the structured field parser it includes (lib/sfparse).
         .target(
             name: "nghttp3",
-            sources: ["nghttp3/lib/sfparse/sfparse.c"] + nghttp3Sources,
+            sources: try cFiles("nghttp3", "nghttp3/lib") + ["nghttp3/lib/sfparse/sfparse.c"],
             cSettings: platform + [.headerSearchPath("nghttp3/lib")]
         ),
         .testTarget(name: "ngtcp2Tests", dependencies: ["ngtcp2", "nghttp3", "CNgtcp2BoringSSL"]),
     ],
-    cLanguageStandard: .c11,
+    // C11 with GNU extensions, as CMake builds ngtcp2 and nghttp3: glibc declares be64toh only then.
+    cLanguageStandard: .gnu11,
     cxxLanguageStandard: .cxx17
 )
