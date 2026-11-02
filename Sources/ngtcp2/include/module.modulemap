@@ -1,0 +1,4 @@
+module ngtcp2 {
+    header "ngtcp2_module.h"
+    export *
+}

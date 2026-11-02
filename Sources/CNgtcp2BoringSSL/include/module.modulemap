@@ -1,0 +1,4 @@
+module CNgtcp2BoringSSL {
+    header "CNgtcp2BoringSSL.h"
+    export *
+}

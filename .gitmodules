@@ -1,0 +1,12 @@
+[submodule "Sources/CNgtcp2BoringSSL/boringssl"]
+	path = Sources/CNgtcp2BoringSSL/boringssl
+	url = https://boringssl.googlesource.com/boringssl
+	shallow = true
+[submodule "Sources/ngtcp2/ngtcp2"]
+	path = Sources/ngtcp2/ngtcp2
+	url = https://github.com/ngtcp2/ngtcp2.git
+	shallow = true
+[submodule "Sources/nghttp3/nghttp3"]
+	path = Sources/nghttp3/nghttp3
+	url = https://github.com/ngtcp2/nghttp3.git
+	shallow = true

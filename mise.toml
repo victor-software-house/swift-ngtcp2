@@ -1,0 +1,7 @@
+[tools]
+# Builds the package on Linux (CI). On macOS, Swift comes with Xcode.
+swift = { version = "6.4.0", os = ["linux"] }
+
+[tasks.check]
+description = "Build the package and run its tests, as CI does"
+run = ["swift build", "swift test"]

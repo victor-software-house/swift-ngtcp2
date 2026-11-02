@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#MISE description="Write ngtcp2's and nghttp3's version.h from the release tag each submodule pins"
+set -euo pipefail
+
+# Fills version.h.in as the libraries' own builds do: @PACKAGE_VERSION@ is the tag without its "v",
+# @PACKAGE_VERSION_NUM@ is 0xMMmmpp.
+write() {
+  local submodule=$1 template=$2 output=$3 tag version major minor patch
+  tag=$(git -C "$submodule" describe --tags --exact-match)
+  version=${tag#v}
+  IFS=. read -r major minor patch <<<"$version"
+  sed -e "s/@PACKAGE_VERSION@/$version/" \
+    -e "s/@PACKAGE_VERSION_NUM@/$(printf '0x%02x%02x%02x' "$major" "$minor" "$patch")/" \
+    "$submodule/$template" >"$output"
+}
+
+write Sources/ngtcp2/ngtcp2 lib/includes/ngtcp2/version.h.in Sources/ngtcp2/include/ngtcp2/version.h
+write Sources/nghttp3/nghttp3 lib/includes/nghttp3/version.h.in Sources/nghttp3/include/nghttp3/version.h
