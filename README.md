@@ -40,7 +40,8 @@ targets: [
 
 ## Versions
 
-Each release of this package pins one release of each library:
+Each release of this package pins one release of each library.
+0.0.1 cannot be used as a dependency: its manifest read files from the submodules, which SwiftPM does not check out when it reads a manifest.
 
 | Package | ngtcp2 | nghttp3 | BoringSSL |
 |:--|:--|:--|:--|

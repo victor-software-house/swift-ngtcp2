@@ -4,7 +4,7 @@ This repository packages upstream ngtcp2, nghttp3 and BoringSSL for SwiftPM. `RE
 
 ## Rules
 
-- Never copy upstream source into this repository. Each library is a submodule pinned to an upstream release tag. The only generated files are ngtcp2's and nghttp3's `version.h`, which their own builds write from `version.h.in`, written by `mise run version-headers`.
+- Never copy upstream source into this repository. Each library is a submodule pinned to an upstream release tag. The only generated files are ngtcp2's and nghttp3's `version.h`, which `mise run version-headers` writes from `version.h.in` as their own builds do.
 - `Package.swift` reads no files. SwiftPM reads a dependency's manifest from git without its submodules, so a manifest that reads `gen/sources.json` or lists `lib/` builds here and fails for every consumer (0.0.1 did). Its source lists are literals that `mise run sources` writes from the submodules; `mise run check:sources` (part of `mise run check`) fails when they differ.
 - Move a submodule only to an upstream release tag, never to a branch head, then run `mise run version-headers` and `mise run sources`.
 - Each release pins one release of each library: move the submodules, add a row to the README version table, and tag the merged commit. The first release is `0.0.1`; bump the patch for new upstream releases, and the minor when the package's own interface breaks.
