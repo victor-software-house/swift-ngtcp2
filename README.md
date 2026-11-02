@@ -15,13 +15,13 @@ such as swift-nio-ssl's or swift-crypto's, or a system OpenSSL.
 BoringSSL ships the rename list in its tree (`include/openssl/prefix_symbols.h`); defining `BORINGSSL_PREFIX` turns it on.
 Swift code calls the original names, such as `SSL_CTX_new`; the compiler links them to the renamed symbols.
 BoringSSL's C++ internals are in the namespace `bssl::CNgtcp2BoringSSL`.
-The only global symbols left unrenamed are weak ones every C++ object can emit: libc++ template instances, `__clang_call_terminate` and the `typeinfo` of `evp_pkey_ctx_st` (`nm` of the 0.0.1 objects on macOS).
+The only global symbols left unrenamed are weak ones every C++ object can emit: libc++ template instances, `__clang_call_terminate` and the `typeinfo` of `evp_pkey_ctx_st` (`nm` of the objects on macOS, 0.0.1).
 
 ## Use
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/victor-software-house/swift-ngtcp2.git", exact: "0.0.1"),
+    .package(url: "https://github.com/victor-software-house/swift-ngtcp2.git", exact: "0.0.2"),
 ],
 targets: [
     .target(name: "MyTarget", dependencies: [
@@ -40,11 +40,13 @@ targets: [
 
 ## Versions
 
-Each release of this package pins one release of each library:
+Each release of this package pins one release of each library.
+0.0.1 cannot be used as a dependency: its manifest read files from the submodules, which SwiftPM does not check out when it reads a manifest.
 
 | Package | ngtcp2 | nghttp3 | BoringSSL |
 |:--|:--|:--|:--|
 | 0.0.1 | v1.25.0 | v1.18.0 | 0.20261020.0 |
+| 0.0.2 | v1.25.0 | v1.18.0 | 0.20261020.0 |
 
 ## Licence
 

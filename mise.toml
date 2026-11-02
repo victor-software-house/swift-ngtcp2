@@ -2,6 +2,14 @@
 # Builds the package on Linux (CI). On macOS, Swift comes with Xcode.
 swift = { version = "6.4.0", os = ["linux"] }
 
+[tasks.sources]
+description = "Write the source lists in Package.swift from the pinned submodules"
+run = "swift scripts/sources.swift"
+
+[tasks."check:sources"]
+description = "Fail when Package.swift's source lists differ from the pinned submodules"
+run = ["swift scripts/sources.swift", "git diff --exit-code -- Package.swift"]
+
 [tasks.check]
-description = "Build the package and run its tests, as CI does"
-run = ["swift build", "swift test"]
+description = "Check the source lists, build the package and run its tests, as CI does"
+run = ["mise run check:sources", "swift build", "swift test"]
