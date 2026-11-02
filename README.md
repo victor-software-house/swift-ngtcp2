@@ -14,6 +14,8 @@ Every BoringSSL symbol is renamed with the prefix `CNgtcp2BoringSSL_`, so this c
 such as swift-nio-ssl's or swift-crypto's, or a system OpenSSL.
 BoringSSL ships the rename list in its tree (`include/openssl/prefix_symbols.h`); defining `BORINGSSL_PREFIX` turns it on.
 Swift code calls the original names, such as `SSL_CTX_new`; the compiler links them to the renamed symbols.
+BoringSSL's C++ internals are in the namespace `bssl::CNgtcp2BoringSSL`.
+The only global symbols left unrenamed are weak ones every C++ object can emit: libc++ template instances, `__clang_call_terminate` and the `typeinfo` of `evp_pkey_ctx_st` (`nm` of the 0.0.1 objects on macOS).
 
 ## Use
 
@@ -42,6 +44,7 @@ Each release of this package pins one release of each library:
 
 | Package | ngtcp2 | nghttp3 | BoringSSL |
 |:--|:--|:--|:--|
+| 0.0.1 | v1.25.0 | v1.18.0 | 0.20261020.0 |
 
 ## Licence
 
