@@ -1,17 +1,7 @@
-// Writes the source lists in Package.swift from the pinned submodules: BoringSSL's gen/sources.json
-// and the .c files in ngtcp2's and nghttp3's lib/. SwiftPM reads a dependency's manifest from git
-// without its submodules, so the manifest itself cannot read them. Run as `mise run sources`.
+// Writes the source lists in Package.swift from the pinned submodules: the .c files in ngtcp2's and
+// nghttp3's lib/. SwiftPM reads a dependency's manifest from git without its submodules, so the
+// manifest itself cannot read them. Run as `mise run sources`.
 import Foundation
-
-struct BoringSSLSources: Decodable {
-    struct Library: Decodable {
-        let srcs: [String]
-        let asm: [String]?
-    }
-    let bcm: Library
-    let crypto: Library
-    let ssl: Library
-}
 
 /// The .c files directly in Sources/<target>/<directory>, as paths relative to the target.
 func cFiles(_ target: String, _ directory: String) throws -> [String] {
@@ -25,13 +15,7 @@ func list(_ name: String, _ files: [String]) -> String {
     "let \(name): [String] = [\n" + files.map { "    \"\($0)\",\n" }.joined() + "]\n"
 }
 
-let boringssl = try JSONDecoder().decode(
-    BoringSSLSources.self,
-    from: Data(contentsOf: URL(fileURLWithPath: "Sources/CNgtcp2BoringSSL/boringssl/gen/sources.json")))
 let lists = [
-    list("boringsslSources", [boringssl.bcm, boringssl.crypto, boringssl.ssl]
-        .flatMap { $0.srcs + ($0.asm ?? []) }
-        .map { "boringssl/\($0)" }),
     list("ngtcp2Sources", try cFiles("ngtcp2", "ngtcp2/lib")
         + ["ngtcp2/crypto/shared.c", "ngtcp2/crypto/boringssl/boringssl.c"]),
     list("nghttp3Sources", try cFiles("nghttp3", "nghttp3/lib") + ["nghttp3/lib/sfparse/sfparse.c"]),
