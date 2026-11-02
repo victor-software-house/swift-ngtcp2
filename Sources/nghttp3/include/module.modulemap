@@ -1,0 +1,4 @@
+module nghttp3 {
+    header "nghttp3/nghttp3.h"
+    export *
+}
