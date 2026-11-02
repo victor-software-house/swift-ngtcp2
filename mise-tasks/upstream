@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#MISE description="Move ngtcp2 and nghttp3 to their latest release tags, then rewrite version.h and the source lists"
+set -euo pipefail
+
+# The newest vX.Y.Z tag of a submodule's remote; release candidates and other suffixes are skipped.
+latest() {
+  git -C "$1" ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' \
+    | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1
+}
+
+for submodule in Sources/ngtcp2/ngtcp2 Sources/nghttp3/nghttp3; do
+  tag=$(latest "$submodule")
+  git -C "$submodule" fetch -q --depth 1 origin tag "$tag"
+  git -C "$submodule" checkout -q "$tag"
+  git -C "$submodule" submodule update -q --init --recursive
+  echo "$submodule $tag"
+done
+
+mise run version-headers
+mise run sources

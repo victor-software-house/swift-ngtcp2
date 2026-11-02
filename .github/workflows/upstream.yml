@@ -1,0 +1,53 @@
+name: Upstream releases
+
+# Every week, moves ngtcp2 and nghttp3 to their latest release tags (`mise run upstream`) and opens a
+# pull request when either moved. A pull request opened with GITHUB_TOKEN starts no pull_request
+# workflow, so this workflow starts CI on the branch itself.
+on:
+  schedule:
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: upstream
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Move submodules to upstream releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      - run: mise run upstream
+      - name: Open a pull request when a submodule moved
+        run: |
+          if git diff --quiet; then
+            echo "ngtcp2 and nghttp3 are at their latest releases"
+            exit 0
+          fi
+          ngtcp2=$(git -C Sources/ngtcp2/ngtcp2 describe --tags --exact-match)
+          nghttp3=$(git -C Sources/nghttp3/nghttp3 describe --tags --exact-match)
+          branch="chore/upstream-ngtcp2-$ngtcp2-nghttp3-$nghttp3"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "$branch already exists"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "chore: move to ngtcp2 $ngtcp2 and nghttp3 $nghttp3"
+          git push origin "$branch"
+          gh pr create --head "$branch" --title "chore: move to ngtcp2 $ngtcp2 and nghttp3 $nghttp3" \
+            --body "The latest upstream releases: ngtcp2 $ngtcp2, nghttp3 $nghttp3. \`version.h\` and the source lists in \`Package.swift\` are rewritten from them. Before merging, add a row to the README version table; after merging, tag the release."
+          gh workflow run ci.yml --ref "$branch"
