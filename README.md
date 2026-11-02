@@ -42,6 +42,7 @@ Each release of this package pins one release of each library:
 
 | Package | ngtcp2 | nghttp3 | BoringSSL |
 |:--|:--|:--|:--|
+| 0.0.1 | v1.25.0 | v1.18.0 | 0.20261020.0 |
 
 ## Licence
 
