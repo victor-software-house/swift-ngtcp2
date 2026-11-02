@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Weekly against the newest swift-nio-ssl release, whose BoringSSL ngtcp2 links (README "BoringSSL").
+  schedule:
+    - cron: "17 6 * * 1"
 
 permissions:
   contents: read

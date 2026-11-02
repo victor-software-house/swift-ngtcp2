@@ -1,0 +1,60 @@
+name: Upstream releases
+
+# Every week, moves ngtcp2 and nghttp3 to their latest release tags (`mise run upstream`) and opens a
+# pull request when either moved. The enterprise does not let GITHUB_TOKEN open pull requests, so the
+# vsh-changeset-version App pushes the branch and opens it, which also starts CI on it.
+on:
+  schedule:
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Move submodules to upstream releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Mint the pull request token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.CHANGESET_VERSION_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHANGESET_VERSION_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      - run: mise run upstream
+      - name: Open a pull request when a submodule moved
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if git diff --quiet; then
+            echo "ngtcp2 and nghttp3 are at their latest releases"
+            exit 0
+          fi
+          ngtcp2=$(git -C Sources/ngtcp2/ngtcp2 describe --tags --exact-match)
+          nghttp3=$(git -C Sources/nghttp3/nghttp3 describe --tags --exact-match)
+          branch="chore/upstream-ngtcp2-$ngtcp2-nghttp3-$nghttp3"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "$branch already exists"
+            exit 0
+          fi
+          git config user.name "vsh-changeset-version[bot]"
+          git config user.email "322872346+vsh-changeset-version[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "chore: move to ngtcp2 $ngtcp2 and nghttp3 $nghttp3"
+          git push origin "$branch"
+          gh pr create --head "$branch" --title "chore: move to ngtcp2 $ngtcp2 and nghttp3 $nghttp3" \
+            --body "The latest upstream releases: ngtcp2 $ngtcp2, nghttp3 $nghttp3. \`version.h\` and the source lists in \`Package.swift\` are rewritten from them. Before merging, add a row to the README version table; after merging, tag the release."

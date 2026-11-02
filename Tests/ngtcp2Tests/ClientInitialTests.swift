@@ -1,4 +1,4 @@
-import CNgtcp2BoringSSL
+import CNIOBoringSSL
 import Testing
 import nghttp3
 import ngtcp2
@@ -11,16 +11,17 @@ import Glibc
 
 /// The package links and works: ngtcp2 writes a client's first Initial packet, which takes the TLS
 /// ClientHello from BoringSSL, the Initial keys from HKDF, AES-GCM packet protection and AES header
-/// protection. A BoringSSL symbol that one target renamed and another did not fails the link.
+/// protection, all from swift-nio-ssl's BoringSSL. A BoringSSL function swift-nio-ssl no longer builds
+/// fails the link.
 @Test func aClientWritesItsFirstInitialPacket() throws {
-    let context = try #require(SSL_CTX_new(TLS_method()))
-    defer { SSL_CTX_free(context) }
+    let context = try #require(CNIOBoringSSL_SSL_CTX_new(CNIOBoringSSL_TLS_method()))
+    defer { CNIOBoringSSL_SSL_CTX_free(context) }
     #expect(ngtcp2_crypto_boringssl_configure_client_context(context) == 0)
-    let ssl = try #require(SSL_new(context))
-    defer { SSL_free(ssl) }
-    SSL_set_connect_state(ssl)
+    let ssl = try #require(CNIOBoringSSL_SSL_new(context))
+    defer { CNIOBoringSSL_SSL_free(ssl) }
+    CNIOBoringSSL_SSL_set_connect_state(ssl)
     let alpn: [UInt8] = [2, UInt8(ascii: "h"), UInt8(ascii: "3")]
-    #expect(SSL_set_alpn_protos(ssl, alpn, alpn.count) == 0)
+    #expect(CNIOBoringSSL_SSL_set_alpn_protos(ssl, alpn, alpn.count) == 0)
 
     // ngtcp2's crypto callbacks find the connection through the SSL's app data.
     let connection = UnsafeMutablePointer<OpaquePointer?>.allocate(capacity: 1)
@@ -31,7 +32,7 @@ import Glibc
             reference!.pointee.user_data.assumingMemoryBound(to: OpaquePointer?.self).pointee
         },
         user_data: UnsafeMutableRawPointer(connection))
-    #expect(SSL_set_ex_data(ssl, 0, &reference) == 1)
+    #expect(CNIOBoringSSL_SSL_set_ex_data(ssl, 0, &reference) == 1)
 
     var callbacks = ngtcp2_callbacks()
     callbacks.client_initial = ngtcp2_crypto_client_initial_cb
@@ -45,11 +46,11 @@ import Glibc
     callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb
     callbacks.get_path_challenge_data2 = ngtcp2_crypto_get_path_challenge_data2_cb
     callbacks.version_negotiation = ngtcp2_crypto_version_negotiation_cb
-    callbacks.rand = { destination, length, _ in _ = RAND_bytes(destination, length) }
+    callbacks.rand = { destination, length, _ in _ = CNIOBoringSSL_RAND_bytes(destination, length) }
     callbacks.get_new_connection_id2 = { _, cid, token, length, _ in
-        withUnsafeMutableBytes(of: &cid!.pointee.data) { _ = RAND_bytes($0.baseAddress!.assumingMemoryBound(to: UInt8.self), length) }
+        withUnsafeMutableBytes(of: &cid!.pointee.data) { _ = CNIOBoringSSL_RAND_bytes($0.baseAddress!.assumingMemoryBound(to: UInt8.self), length) }
         cid!.pointee.datalen = length
-        withUnsafeMutableBytes(of: &token!.pointee.data) { _ = RAND_bytes($0.baseAddress!.assumingMemoryBound(to: UInt8.self), $0.count) }
+        withUnsafeMutableBytes(of: &token!.pointee.data) { _ = CNIOBoringSSL_RAND_bytes($0.baseAddress!.assumingMemoryBound(to: UInt8.self), $0.count) }
         return 0
     }
 
@@ -64,7 +65,7 @@ import Glibc
     var destination = ngtcp2_cid()
     var source = ngtcp2_cid()
     var random = [UInt8](repeating: 0, count: 16)
-    _ = RAND_bytes(&random, random.count)
+    _ = CNIOBoringSSL_RAND_bytes(&random, random.count)
     ngtcp2_cid_init(&destination, random, 8)
     ngtcp2_cid_init(&source, Array(random[8...]), 8)
 
